@@ -31,8 +31,31 @@ class AuthError(Exception):
     return the token part of the header
 '''
 def get_token_auth_header():
-   raise Exception('Not Implemented')
+    # attempt to get the header from the request
+    auth = request.headers.get('Authorization', None)
+    # #* raise an AuthError if no header is present
+    if not auth:
+        raise AuthError({'description': 'Authorization header for this request was npot found, Please try again later!'}, 401)
+    
+    '''
+    The authorization heade will be having  two parts which will split into parts example 'Authorization', 'Bearer XXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+    '''
+    header_parts = auth.split() # split and baer the token to get two parts
 
+
+    if header_parts[0].lower() != 'bearer': # authorization header must start with bearer
+        raise AuthError({
+            'description': 'Authorization header must start with "Bearer"'
+            }, 401)
+
+    elif len(header_parts) != 2:
+        raise AuthError({
+            'description': 'Authorization header format is invalid, Please try again later!'
+            }, 401)
+      # #* return the token part of the header
+    return header_parts[1]        
+
+    # #* return the token part of th
 '''
 @TODO implement check_permissions(permission, payload) method
     @INPUTS
@@ -45,7 +68,12 @@ def get_token_auth_header():
     return true otherwise
 '''
 def check_permissions(permission, payload):
-    raise Exception('Not Implemented')
+    if "permissions" not in payload: #raise an AuthError if permissions are not included in the payload
+        raise AuthError({"description": "Permissions not included in JWT."},  400)
+
+    if permission not in payload["permissions"]: # raise an AuthError if the requested permission string is not in the payload permissions array
+        raise AuthError({"description": "Unauthorized access!, Couldn't authorize this request, Please try again later!"}, 403)
+    return True
 
 '''
 @TODO implement verify_decode_jwt(token) method
@@ -61,7 +89,69 @@ def check_permissions(permission, payload):
     !!NOTE urlopen has a common certificate error described here: https://stackoverflow.com/questions/50236117/scraping-ssl-certificate-verify-failed-error-for-http-en-wikipedia-org
 '''
 def verify_decode_jwt(token):
-    raise Exception('Not Implemented')
+    json_web_token_url = urlopen(f"https://{AUTH0_DOMAIN}/.well-known/jwks.json")
+    jwks = json.loads(json_web_token_url.read())
+    unverified_header = jwt.get_unverified_header(token)
+
+
+    rsa_key = {} # empty the variable
+    if "kid" not in unverified_header:
+        raise AuthError(
+            {"code": "invalid_header", "description": "Authorization malformed, Please trya again later!"}, 401
+        )   
+
+
+    for key in jwks["keys"]:
+        if key["kid"] == unverified_header["kid"]:
+            rsa_key = {
+                "kty": key["kty"],
+                "kid": key["kid"],
+                "use": key["use"],
+                "n": key["n"],
+                "e": key["e"],
+  
+          }
+    if rsa_key:
+        try:
+            payload = jwt.decode(
+                token,
+                rsa_key,
+                algorithms=ALGORITHMS,
+                audience=API_AUDIENCE,
+                issuer="https://" + AUTH0_DOMAIN + "/",
+            )
+
+            return payload
+
+        except jwt.ExpiredSignatureError:
+            raise AuthError(
+                {"code": "token_expired", "description": "Token expired."}, 401
+            )
+
+        except jwt.JWTClaimsError:
+            raise AuthError(
+                {
+                    "code": "invalid_claims",
+                    "description": "Incorrect claims. Please try again later!",
+                },
+                401,
+            )
+        except Exception:
+            raise AuthError(
+                {
+                    "code": "invalid_header",
+                    "description": "Error occured while initializing authorization header",
+                },
+                500,
+            )
+    raise AuthError(
+        {
+            "code": "invalid_header",
+            "description": "Unable to find the appropriate key.",
+        },
+        400,
+    )
+            
 
 '''
 @TODO implement @requires_auth(permission) decorator method
