@@ -17,7 +17,7 @@ CORS(app)
 !! NOTE THIS MUST BE UNCOMMENTED ON FIRST RUN
 !! Running this funciton will add one
 '''
-# db_drop_and_create_all()
+#db_drop_and_create_all()
 
 # ROUTES
 '''
@@ -38,7 +38,7 @@ def get_drinks():
 
         return jsonify(result, 200)
     except:
-        abort(500, error_message='Error occured while getting drink details, Please try again later!') # Internal server error    
+        abort(500, description='Error occured while getting drink details, Please try again later!') # Internal server error    
 
 '''
 @TODO implement endpoint
@@ -57,7 +57,7 @@ def get_drink_details_long(jwt):
     except AuthError as e:
         abort(e)
     except:
-         abort(500, error_message='Error occured while getting drink details, Please try again later!') # Internal server error    
+         abort(500, description='Error occured while getting drink details, Please try again later!') # Internal server error    
     return jsonify(success=True, drinks=drinks)
 
 '''
@@ -74,10 +74,10 @@ def get_drink_details_long(jwt):
 def create_drinks(payload):
 # validations for input fields  
     if not 'title' in request.get_json(): # validate if the title field is empty
-        abort(400, error_message='title field is required')
+        abort(400, description='title field is required')
 
     if not 'recipe' in request.get_json():  # validate if the recipe field is empty
-        abort(400, error_message='recipe field is required')
+        abort(400, description='recipe field is required')
 
     try:
         drink_data = Drink(
@@ -85,7 +85,7 @@ def create_drinks(payload):
         recipe=json.dumps([request.get_json().get('recipe')])) # serialize formatted string
         return jsonify({'success': True, 'drinks': [drink_data.long()]}), 200
     except:
-        abort(400, error_message='title must be unique')
+        abort(400, description='title must be unique')
   
 
 '''
@@ -105,18 +105,23 @@ def create_drinks(payload):
 def update_drinks(id):
     drink_row = Drink.query.get(id)
     if not drink_row:
-        abort(404, error_message='Drink was not found, Please try again later!')
-
+        abort(404, description='Drink was not found, Please try again later!')
+    # validate title
     if 'title' in request.get_json():  # update only if the title field is not empty
-        drink_row.title = request.get_json().get('title')
+        drink_row.title = json.dumps([request.get_json().get('title')])
     else:
-        abort(400, error_message='title is required')
+        abort(400, description='title is required')
+
+    # Validate recipe
     if 'recipe' in request.get_json(): # update only if the recip field is not empty
-        drink_row.recipe = [json.dumps(request.get_json().get('recipe'))]
+        drink_row.recipe = json.dumps([request.get_json().get('recipe')])
+    else:
+         abort(400, description='recipe is required')   
     try:
-        drink_row.update()
+         #drink_row.update()
+         a=1
     except:
-        abort(400, error_message='title must be unique')
+        abort(400, description='title must be unique')
 
     return jsonify({'success': True, 'drinks': [drink_row.long()]}), 200
 
@@ -143,9 +148,9 @@ def delete_drinks(id):
             'success': True,
             'delete': id
             }), 200
-        abort(404, error_message='Drink not found, Please tr again later!') # not found     
+        abort(404, description='Drink not found, Please tr again later!') # not found     
     except:
-            abort(500, error_message='Error occured while getting drink details, Please try again later!') # internal server error  
+            abort(500, description='Error occured while getting drink details, Please try again later!') # internal server error  
 
 # Error Handling
 '''
@@ -177,7 +182,7 @@ def unprocessable(error_detail):
     return jsonify({
         "success": False,
         "error": 400,
-        "message": error_detail.error_message
+        "message": error_detail.description
     }), 400
 '''
 @TODO implement error handler for 404
@@ -188,7 +193,7 @@ def unprocessable(error_detail):
     return jsonify({
         "success": False,
         "error": 404,
-        "message": error_detail.error_message
+        "message": error_detail.description
     }), 404
 
 
@@ -197,7 +202,7 @@ def unprocessable(error_detail):
     return jsonify({
         "success": False,
         "error": 500,
-        "message": error_detail.error_message
+        "message": error_detail.description
     }), 500    
 
 
@@ -211,5 +216,5 @@ def unprocessable(error_detail):
     return jsonify({
         "success": False,
         "error": error_detail.status_code,
-        "message": error_detail.error.get('error_message'),
+        "message": error_detail.error.get('description'),
     }), error_detail.status_code

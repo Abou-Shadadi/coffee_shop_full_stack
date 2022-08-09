@@ -5,9 +5,9 @@ from jose import jwt
 from urllib.request import urlopen
 
 
-AUTH0_DOMAIN = 'udacity-fsnd.auth0.com'
+AUTH0_DOMAIN = 'dev-ekrtug23.us.auth0.com'
 ALGORITHMS = ['RS256']
-API_AUDIENCE = 'dev'
+API_AUDIENCE = 'CoffishopApi'
 
 ## AuthError Exception
 '''
@@ -35,7 +35,7 @@ def get_token_auth_header():
     auth = request.headers.get('Authorization', None)
     # #* raise an AuthError if no header is present
     if not auth:
-        raise AuthError({'description': 'Authorization header for this request was npot found, Please try again later!'}, 401)
+        raise AuthError({'description': 'Authorization header for this request was not found, Please try again later!'}, 401)
     
     '''
     The authorization heade will be having  two parts which will split into parts example 'Authorization', 'Bearer XXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
@@ -97,7 +97,7 @@ def verify_decode_jwt(token):
     rsa_key = {} # empty the variable
     if "kid" not in unverified_header:
         raise AuthError(
-            {"code": "invalid_header", "description": "Authorization malformed, Please trya again later!"}, 401
+            {"code": "invalid_header", "description": "Authorization malformed, Please try  again later!"}, 401
         )   
 
 
@@ -125,7 +125,7 @@ def verify_decode_jwt(token):
 
         except jwt.ExpiredSignatureError:
             raise AuthError(
-                {"code": "token_expired", "description": "Token expired."}, 401
+                {"code": "token_expired", "description": "Header token expired  please try again later."}, 401
             )
 
         except jwt.JWTClaimsError:
@@ -147,7 +147,7 @@ def verify_decode_jwt(token):
     raise AuthError(
         {
             "code": "invalid_header",
-            "description": "Unable to find the appropriate key.",
+            "description": "invald auth key Please try again later",
         },
         400,
     )
